@@ -479,12 +479,16 @@ function ChatWidget({ user, showToast }) {
   }, [open]);
 
   const scrollToBottom = () => {
-    requestAnimationFrame(() => {
-      if (listRef.current) {
-        listRef.current.scrollTop = listRef.current.scrollHeight;
-      }
-    });
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
   };
+
+  // 메시지가 갱신되거나 채팅을 열 때마다 스크롤을 맨 아래로 (렌더 이후 실행)
+  useEffect(() => {
+    if (!open) return;
+    scrollToBottom();
+  }, [messages, open]);
 
   // 폴링은 위젯이 마운트되어 있는 동안 항상 동작 (열려있지 않아도 새 메시지 수신)
   useEffect(() => {
@@ -508,7 +512,6 @@ function ChatWidget({ user, showToast }) {
           const others = data.messages.filter((m) => m.nickname !== user.nickname);
           if (others.length > 0) setUnread((u) => u + others.length);
         }
-        if (openRef.current) scrollToBottom();
       } catch {}
     };
 
@@ -523,7 +526,6 @@ function ChatWidget({ user, showToast }) {
   const openChat = () => {
     setOpen(true);
     setUnread(0);
-    scrollToBottom();
   };
 
   const send = async () => {
@@ -546,7 +548,6 @@ function ChatWidget({ user, showToast }) {
     if (data.chat.id > lastIdRef.current) {
       lastIdRef.current = data.chat.id;
       setMessages((prev) => [...prev, data.chat].slice(-200));
-      scrollToBottom();
     }
   };
 
