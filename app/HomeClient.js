@@ -183,7 +183,7 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
                     {b.match.homeTeam} vs {b.match.awayTeam}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {PICK_LABEL[b.pick]} · {b.amount.toLocaleString()}P · 배당 {b.oddsAtBet}
+                    {PICK_LABEL[b.pick]} · {b.amount.toLocaleString()}P
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -298,12 +298,6 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
 
       <div className="odds-row">
         {["HOME", "DRAW", "AWAY"].map((p) => {
-          const val =
-            p === "HOME"
-              ? match.oddsHome
-              : p === "DRAW"
-              ? match.oddsDraw
-              : match.oddsAway;
           const isWon = isFinished && match.result === p;
           const isMyPick = myBet && myBet.pick === p;
           return (
@@ -316,7 +310,6 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
               style={locked ? { cursor: "default" } : {}}
             >
               <div className="label">{PICK_LABEL[p]}</div>
-              <div className="val">{val}</div>
               {isMyPick && <div className="mypick-tag">내 베팅</div>}
             </div>
           );
