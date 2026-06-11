@@ -120,12 +120,6 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
           >
             랭킹 🏆
           </div>
-          <div
-            className={`tab ${tab === "chat" ? "active" : ""}`}
-            onClick={() => setTab("chat")}
-          >
-            채팅 💬
-          </div>
         </div>
 
         {tab === "matches" && (
@@ -209,9 +203,8 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
         )}
 
         {tab === "ranking" && <RankingPanel user={user} />}
-
-        {tab === "chat" && <ChatPanel user={user} showToast={showToast} />}
       </div>
+      <ChatWidget user={user} showToast={showToast} />
       {toast && <div className="toast">{toast}</div>}
     </>
   );
@@ -448,12 +441,19 @@ function RankingPanel({ user }) {
   );
 }
 
-function ChatPanel({ user, showToast }) {
+function ChatWidget({ user, showToast }) {
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [unread, setUnread] = useState(0);
   const lastIdRef = useRef(0);
   const listRef = useRef(null);
+  const openRef = useRef(false);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -463,6 +463,7 @@ function ChatPanel({ user, showToast }) {
     });
   };
 
+  // 폴링은 위젯이 마운트되어 있는 동안 항상 동작 (열려있지 않아도 새 메시지 수신)
   useEffect(() => {
     let alive = true;
 
@@ -473,12 +474,18 @@ function ChatPanel({ user, showToast }) {
         if (!res.ok) return;
         const data = await res.json();
         if (!alive || data.messages.length === 0) return;
+        const firstLoad = after === 0;
         lastIdRef.current = data.messages[data.messages.length - 1].id;
         setMessages((prev) => {
-          const merged = after === 0 ? data.messages : [...prev, ...data.messages];
+          const merged = firstLoad ? data.messages : [...prev, ...data.messages];
           return merged.slice(-200);
         });
-        scrollToBottom();
+        // 닫혀있고 첫 로드가 아니면 안 읽은 메시지 카운트 (내 메시지는 제외)
+        if (!firstLoad && !openRef.current) {
+          const others = data.messages.filter((m) => m.nickname !== user.nickname);
+          if (others.length > 0) setUnread((u) => u + others.length);
+        }
+        if (openRef.current) scrollToBottom();
       } catch {}
     };
 
@@ -488,7 +495,13 @@ function ChatPanel({ user, showToast }) {
       alive = false;
       clearInterval(timer);
     };
-  }, []);
+  }, [user.nickname]);
+
+  const openChat = () => {
+    setOpen(true);
+    setUnread(0);
+    scrollToBottom();
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -516,8 +529,26 @@ function ChatPanel({ user, showToast }) {
 
   return (
     <>
-      <div className="section-title">실시간 채팅</div>
-      <div className="chat-box">
+      {!open && (
+        <button className="chat-fab" onClick={openChat} aria-label="채팅 열기">
+          💬
+          {unread > 0 && (
+            <span className="chat-fab-badge">{unread > 99 ? "99+" : unread}</span>
+          )}
+        </button>
+      )}
+
+      <div className={`chat-panel ${open ? "open" : ""}`}>
+        <div className="chat-panel-head">
+          <span className="chat-panel-title">실시간 채팅 💬</span>
+          <button
+            className="chat-panel-close"
+            onClick={() => setOpen(false)}
+            aria-label="채팅 닫기"
+          >
+            ✕
+          </button>
+        </div>
         <div className="chat-list" ref={listRef}>
           {messages.length === 0 && (
             <div className="empty">첫 메시지를 남겨보세요!</div>
@@ -545,6 +576,8 @@ function ChatPanel({ user, showToast }) {
           </button>
         </div>
       </div>
+
+      {open && <div className="chat-backdrop" onClick={() => setOpen(false)} />}
     </>
   );
 }

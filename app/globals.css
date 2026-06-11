@@ -576,17 +576,90 @@ a {
   flex-shrink: 0;
 }
 
-/* 실시간 채팅 */
-.chat-box {
-  background: var(--card);
+/* 실시간 채팅 - 우측 상시 패널 */
+.chat-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 90;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  overflow: hidden;
+  background: var(--primary);
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.chat-fab:hover {
+  transform: scale(1.06);
+}
+.chat-fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 95;
+  width: 380px;
+  max-width: 100vw;
+  height: 100vh;
+  background: var(--card);
+  border-left: 1px solid var(--line);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  height: 60vh;
-  min-height: 380px;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
 }
+.chat-panel.open {
+  transform: translateX(0);
+}
+.chat-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.chat-panel-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+.chat-panel-close {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.chat-backdrop {
+  display: none;
+}
+
 .chat-list {
   flex: 1;
   overflow-y: auto;
@@ -643,4 +716,23 @@ a {
   color: var(--text);
   padding: 10px 12px;
   font-size: 15px;
+}
+
+/* 모바일: 채팅 전체화면 오버레이 */
+@media (max-width: 560px) {
+  .chat-panel {
+    width: 100vw;
+    border-left: none;
+  }
+  .chat-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 94;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .chat-fab {
+    right: 16px;
+    bottom: 16px;
+  }
 }
