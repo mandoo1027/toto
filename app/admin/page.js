@@ -31,6 +31,7 @@ export default function AdminPage() {
   const [pw, setPw] = useState("");
   const [authed, setAuthed] = useState(false);
   const [matches, setMatches] = useState([]);
+  const [users, setUsers] = useState([]);
   const [toast, setToast] = useState("");
   const [form, setForm] = useState(emptyForm);
 
@@ -45,8 +46,9 @@ export default function AdminPage() {
   });
 
   const load = async (password) => {
+    const p = password ?? pw;
     const res = await fetch(`${BASE}/api/admin`, {
-      headers: { "x-admin-password": password ?? pw },
+      headers: { "x-admin-password": p },
     });
     if (!res.ok) {
       showToast("비밀번호가 틀렸습니다.");
@@ -54,7 +56,34 @@ export default function AdminPage() {
     }
     const data = await res.json();
     setMatches(data.matches);
+    loadUsers(p);
     return true;
+  };
+
+  const loadUsers = async (password) => {
+    const res = await fetch(`${BASE}/api/admin/users`, {
+      headers: { "x-admin-password": password ?? pw },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    setUsers(data.users);
+  };
+
+  const deleteUser = async (u) => {
+    if (
+      !confirm(
+        `'${u.nickname}' 계정을 삭제합니다.\n\n⚠️ 이 계정의 베팅 ${u._count.bets}건도 모두 삭제되며 되돌릴 수 없습니다.\n계속하시겠습니까?`
+      )
+    )
+      return;
+    const res = await fetch(`${BASE}/api/admin/users?userId=${u.id}`, {
+      method: "DELETE",
+      headers: headers(),
+    });
+    const data = await res.json();
+    if (!res.ok) return showToast(data.error || "삭제 실패");
+    showToast(`'${u.nickname}' 삭제 완료 (베팅 ${data.deletedBets}건)`);
+    loadUsers();
   };
 
   const login = async () => {
@@ -162,6 +191,26 @@ export default function AdminPage() {
         <div className="section-title">경기 목록 / 결과 정산</div>
         {matches.map((m) => (
           <AdminMatchCard key={m.id} match={m} onSettle={settle} />
+        ))}
+
+        <div className="section-title">계정 관리 ({users.length})</div>
+        {users.length === 0 && <div className="empty">가입한 계정이 없습니다.</div>}
+        {users.map((u) => (
+          <div className="user-row" key={u.id}>
+            <div className="user-info">
+              <div className="user-nick">{u.nickname}</div>
+              <div className="user-sub">
+                {u.points.toLocaleString()}P · 베팅 {u._count.bets}건
+              </div>
+            </div>
+            <button
+              className="btn"
+              style={{ background: "var(--lose)", padding: "8px 14px", fontSize: 13 }}
+              onClick={() => deleteUser(u)}
+            >
+              삭제
+            </button>
+          </div>
         ))}
       </div>
       {toast && <div className="toast">{toast}</div>}
