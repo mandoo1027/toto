@@ -241,7 +241,19 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   const [loading, setLoading] = useState(false);
   const [showBets, setShowBets] = useState(false);
   const [matchBets, setMatchBets] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
   const alreadyBet = !!myBet;
+
+  const lockAt = new Date(match.kickoff).getTime();
+  const timeLocked = now >= lockAt;
+
+  // 아직 마감 전이면 1초마다 현재 시각 갱신 (마감되면 타이머 중단)
+  useEffect(() => {
+    if (finished || match.status === "FINISHED") return;
+    if (now >= lockAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [finished, match.status, lockAt, now]);
 
   const toggleBets = async () => {
     const next = !showBets;
@@ -270,13 +282,20 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   };
 
   const isFinished = finished || match.status === "FINISHED";
-  const locked = isFinished || alreadyBet;
+  const locked = isFinished || alreadyBet || timeLocked;
 
   return (
     <div className="match-card">
       <div className="match-meta">
         <span>{match.stage}</span>
-        <span>{fmtKST(match.kickoff)}</span>
+        <span>
+          {!isFinished && timeLocked && (
+            <span className="status-tag finished" style={{ marginRight: 8 }}>
+              베팅 마감
+            </span>
+          )}
+          {fmtKST(match.kickoff)}
+        </span>
       </div>
 
       <div className="match-teams">
@@ -346,6 +365,10 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
             {loading ? "..." : "베팅하기"}
           </button>
         </div>
+      )}
+
+      {!isFinished && !alreadyBet && timeLocked && (
+        <div className="bet-locked">🔒 베팅이 마감되었습니다 (킥오프 시각 마감)</div>
       )}
 
       <button className="bets-toggle" onClick={toggleBets}>

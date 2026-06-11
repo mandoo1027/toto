@@ -30,8 +30,11 @@ export async function POST(req) {
   if (match.status !== "SCHEDULED") {
     return NextResponse.json({ error: "베팅이 마감된 경기입니다." }, { status: 400 });
   }
-  if (new Date(match.kickoff) <= new Date()) {
-    return NextResponse.json({ error: "이미 시작된 경기입니다." }, { status: 400 });
+  if (new Date(match.kickoff).getTime() <= Date.now()) {
+    return NextResponse.json(
+      { error: "베팅이 마감되었습니다. (킥오프 시각 마감)" },
+      { status: 400 }
+    );
   }
 
   // 동일 경기 중복 베팅 방지
