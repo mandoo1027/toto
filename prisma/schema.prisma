@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nickname  String   @unique
+  points    Int      @default(10000)
+  createdAt DateTime @default(now())
+  bets      Bet[]
+}
+
+model Match {
+  id         Int      @id @default(autoincrement())
+  homeTeam   String
+  awayTeam   String
+  homeFlag   String   @default("")
+  awayFlag   String   @default("")
+  venue      String   @default("")
+  stage      String   @default("")
+  kickoff    DateTime
+  // 배당률 (승/무/패)
+  oddsHome   Float    @default(2.0)
+  oddsDraw   Float    @default(3.0)
+  oddsAway   Float    @default(2.0)
+  // 상태: SCHEDULED | LOCKED | FINISHED
+  status     String   @default("SCHEDULED")
+  // 결과: null | HOME | DRAW | AWAY
+  result     String?
+  homeScore  Int?
+  awayScore  Int?
+  createdAt  DateTime @default(now())
+  bets       Bet[]
+}
+
+model Bet {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  matchId    Int
+  // 선택: HOME | DRAW | AWAY
+  pick       String
+  amount     Int
+  oddsAtBet  Float
+  // 정산 상태: PENDING | WON | LOST
+  status     String   @default("PENDING")
+  payout     Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@index([matchId])
+  @@index([userId])
+}
