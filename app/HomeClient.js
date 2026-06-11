@@ -94,7 +94,8 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
 
   const upcoming = matches.filter((m) => m.status === "SCHEDULED");
   const finished = matches.filter((m) => m.status === "FINISHED");
-  const betMatchIds = new Set(bets.map((b) => b.matchId));
+  // matchId -> 내 베팅 정보 맵
+  const myBetByMatch = new Map(bets.map((b) => [b.matchId, b]));
 
   return (
     <>
@@ -132,7 +133,7 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
                 key={m.id}
                 match={m}
                 user={user}
-                alreadyBet={betMatchIds.has(m.id)}
+                myBet={myBetByMatch.get(m.id)}
                 onBet={async (pick) => {
                   const res = await fetch(`${BASE}/api/bet`, {
                     method: "POST",
@@ -156,7 +157,13 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
               <>
                 <div className="section-title">종료된 경기</div>
                 {finished.map((m) => (
-                  <MatchCard key={m.id} match={m} user={user} finished />
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    user={user}
+                    myBet={myBetByMatch.get(m.id)}
+                    finished
+                  />
                 ))}
               </>
             )}
@@ -228,9 +235,24 @@ function Header({ user, onLogout }) {
   );
 }
 
-function MatchCard({ match, user, alreadyBet, onBet, finished }) {
+function MatchCard({ match, user, myBet, onBet, finished }) {
   const [pick, setPick] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showBets, setShowBets] = useState(false);
+  const [matchBets, setMatchBets] = useState(null);
+  const alreadyBet = !!myBet;
+
+  const toggleBets = async () => {
+    const next = !showBets;
+    setShowBets(next);
+    if (next) {
+      const res = await fetch(`${BASE}/api/match-bets?matchId=${match.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMatchBets(data.byMatch[match.id] || { HOME: [], DRAW: [], AWAY: [] });
+      }
+    }
+  };
 
   const submit = async () => {
     if (!pick) return;
@@ -283,25 +305,37 @@ function MatchCard({ match, user, alreadyBet, onBet, finished }) {
               ? match.oddsDraw
               : match.oddsAway;
           const isWon = isFinished && match.result === p;
+          const isMyPick = myBet && myBet.pick === p;
           return (
             <div
               key={p}
               className={`odds-btn ${pick === p ? "selected" : ""} ${
                 isWon ? "won" : ""
-              }`}
+              } ${isMyPick ? "mypick" : ""}`}
               onClick={() => !locked && setPick(p)}
               style={locked ? { cursor: "default" } : {}}
             >
               <div className="label">{PICK_LABEL[p]}</div>
               <div className="val">{val}</div>
+              {isMyPick && <div className="mypick-tag">내 베팅</div>}
             </div>
           );
         })}
       </div>
 
-      {alreadyBet && !isFinished && (
-        <div style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "var(--muted)" }}>
-          이미 베팅한 경기입니다.
+      {myBet && (
+        <div className="mybet-info">
+          <span className="mybet-info-label">내 베팅</span>
+          <span>
+            {PICK_LABEL[myBet.pick]} · {myBet.amount.toLocaleString()}P
+          </span>
+          {myBet.status === "PENDING" && (
+            <span className="result-pending">대기중</span>
+          )}
+          {myBet.status === "WON" && (
+            <span className="result-won">+{myBet.payout.toLocaleString()}P 당첨</span>
+          )}
+          {myBet.status === "LOST" && <span className="result-lost">낙첨</span>}
         </div>
       )}
 
@@ -317,6 +351,44 @@ function MatchCard({ match, user, alreadyBet, onBet, finished }) {
           >
             {loading ? "..." : "베팅하기"}
           </button>
+        </div>
+      )}
+
+      <button className="bets-toggle" onClick={toggleBets}>
+        {showBets ? "▲ 베팅 현황 닫기" : "▼ 베팅 현황 보기"}
+      </button>
+
+      {showBets && (
+        <div className="bets-board">
+          {matchBets === null ? (
+            <div className="empty" style={{ padding: "16px 0" }}>
+              불러오는 중...
+            </div>
+          ) : (
+            <div className="bets-cols">
+              {["HOME", "DRAW", "AWAY"].map((p) => (
+                <div key={p} className="bets-col">
+                  <div className="bets-col-head">
+                    {PICK_LABEL[p]} ({matchBets[p].length})
+                  </div>
+                  {matchBets[p].length === 0 ? (
+                    <div className="bets-empty">-</div>
+                  ) : (
+                    matchBets[p].map((b, i) => (
+                      <div
+                        key={i}
+                        className={`bets-name ${
+                          b.nickname === user.nickname ? "me" : ""
+                        }`}
+                      >
+                        {b.nickname}
+                      </div>
+                    ))
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
