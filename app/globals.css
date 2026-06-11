@@ -404,18 +404,22 @@ a {
   align-items: flex-end;
 }
 .chat-nick {
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 3px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--draw);
+  margin-bottom: 4px;
   padding-left: 4px;
+}
+.chat-msg.mine .chat-nick {
+  color: #93c5fd;
 }
 .chat-bubble {
   background: var(--card2);
   border: 1px solid var(--line);
-  padding: 9px 13px;
+  padding: 11px 15px;
   border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.45;
   word-break: break-word;
 }
 .chat-msg.mine .chat-bubble {

@@ -401,7 +401,7 @@ function ChatPanel({ user, showToast }) {
             const mine = m.nickname === user.nickname;
             return (
               <div key={m.id} className={`chat-msg ${mine ? "mine" : ""}`}>
-                {!mine && <div className="chat-nick">{m.nickname}</div>}
+                <div className="chat-nick">{m.nickname}</div>
                 <div className="chat-bubble">{m.message}</div>
               </div>
             );
