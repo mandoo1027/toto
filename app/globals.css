@@ -354,3 +354,87 @@ a {
   grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
+
+/* 고정 베팅 금액 표시 */
+.bet-amount-fixed {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.bet-amount-fixed b {
+  color: var(--draw);
+  margin-left: 6px;
+  font-size: 16px;
+}
+
+/* 실시간 채팅 */
+.chat-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 60vh;
+  min-height: 380px;
+}
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 80%;
+}
+.chat-msg.mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.chat-nick {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 3px;
+  padding-left: 4px;
+}
+.chat-bubble {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.chat-msg.mine .chat-bubble {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+.chat-input input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 15px;
+}

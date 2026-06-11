@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 
 const VALID_PICKS = ["HOME", "DRAW", "AWAY"];
+// 한 게임당 베팅 금액 고정 (변경 불가)
+const BET_AMOUNT = 5000;
 
 // 베팅 등록
 export async function POST(req) {
@@ -11,14 +13,11 @@ export async function POST(req) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
-  const { matchId, pick, amount } = await req.json();
-  const amt = parseInt(amount, 10);
+  const { matchId, pick } = await req.json();
+  const amt = BET_AMOUNT;
 
   if (!VALID_PICKS.includes(pick)) {
     return NextResponse.json({ error: "잘못된 선택입니다." }, { status: 400 });
-  }
-  if (!Number.isInteger(amt) || amt <= 0) {
-    return NextResponse.json({ error: "베팅 금액을 확인해주세요." }, { status: 400 });
   }
   if (amt > user.points) {
     return NextResponse.json({ error: "보유 포인트가 부족합니다." }, { status: 400 });

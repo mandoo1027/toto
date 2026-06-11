@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const BASE = "/toto";
 
@@ -17,6 +17,7 @@ function fmtKST(iso) {
 }
 
 const PICK_LABEL = { HOME: "승", DRAW: "무", AWAY: "패" };
+const BET_AMOUNT = 5000;
 
 export default function HomeClient({ initialUser, matches, initialBets }) {
   const [user, setUser] = useState(initialUser);
@@ -72,7 +73,7 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
             <h2>⚽ 월드컵 승무패 토토</h2>
             <p>
               닉네임만 입력하면 시작! <br />
-              가입 시 <b>10,000P</b> 지급 (가상 포인트)
+              가입 시 <b>500,000P</b> 지급 (가상 포인트)
             </p>
             <input
               placeholder="닉네임 (2~12자)"
@@ -112,6 +113,12 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
           >
             내 베팅 ({bets.length})
           </div>
+          <div
+            className={`tab ${tab === "chat" ? "active" : ""}`}
+            onClick={() => setTab("chat")}
+          >
+            채팅 💬
+          </div>
         </div>
 
         {tab === "matches" && (
@@ -126,11 +133,11 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
                 match={m}
                 user={user}
                 alreadyBet={betMatchIds.has(m.id)}
-                onBet={async (pick, amount) => {
+                onBet={async (pick) => {
                   const res = await fetch(`${BASE}/api/bet`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ matchId: m.id, pick, amount }),
+                    body: JSON.stringify({ matchId: m.id, pick }),
                   });
                   const data = await res.json();
                   if (!res.ok) {
@@ -187,6 +194,8 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
             ))}
           </>
         )}
+
+        {tab === "chat" && <ChatPanel user={user} showToast={showToast} />}
       </div>
       {toast && <div className="toast">{toast}</div>}
     </>
@@ -221,17 +230,19 @@ function Header({ user, onLogout }) {
 
 function MatchCard({ match, user, alreadyBet, onBet, finished }) {
   const [pick, setPick] = useState(null);
-  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
-    if (!pick || !amount) return;
+    if (!pick) return;
+    const ok = window.confirm(
+      `[${PICK_LABEL[pick]}] 에 ${BET_AMOUNT.toLocaleString()}P 를 베팅합니다.\n\n⚠️ 한 번 베팅하면 취소·수정할 수 없습니다.\n계속하시겠습니까?`
+    );
+    if (!ok) return;
     setLoading(true);
-    const ok = await onBet(pick, parseInt(amount, 10));
+    const done = await onBet(pick);
     setLoading(false);
-    if (ok) {
+    if (done) {
       setPick(null);
-      setAmount("");
     }
   };
 
@@ -296,23 +307,119 @@ function MatchCard({ match, user, alreadyBet, onBet, finished }) {
 
       {!locked && (
         <div className="bet-panel">
-          <input
-            type="number"
-            placeholder="베팅 포인트"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            min={1}
-            max={user.points}
-          />
+          <div className="bet-amount-fixed">
+            베팅 금액 <b>{BET_AMOUNT.toLocaleString()}P</b> 고정
+          </div>
           <button
             className="btn"
             onClick={submit}
-            disabled={!pick || !amount || loading}
+            disabled={!pick || loading}
           >
-            {loading ? "..." : "베팅"}
+            {loading ? "..." : "베팅하기"}
           </button>
         </div>
       )}
     </div>
+  );
+}
+
+function ChatPanel({ user, showToast }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const lastIdRef = useRef(0);
+  const listRef = useRef(null);
+
+  const scrollToBottom = () => {
+    requestAnimationFrame(() => {
+      if (listRef.current) {
+        listRef.current.scrollTop = listRef.current.scrollHeight;
+      }
+    });
+  };
+
+  useEffect(() => {
+    let alive = true;
+
+    const poll = async () => {
+      try {
+        const after = lastIdRef.current;
+        const res = await fetch(`${BASE}/api/chat?after=${after}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!alive || data.messages.length === 0) return;
+        lastIdRef.current = data.messages[data.messages.length - 1].id;
+        setMessages((prev) => {
+          const merged = after === 0 ? data.messages : [...prev, ...data.messages];
+          return merged.slice(-200);
+        });
+        scrollToBottom();
+      } catch {}
+    };
+
+    poll();
+    const timer = setInterval(poll, 2500);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || sending) return;
+    setSending(true);
+    const res = await fetch(`${BASE}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text }),
+    });
+    const data = await res.json();
+    setSending(false);
+    if (!res.ok) {
+      showToast(data.error || "전송 실패");
+      return;
+    }
+    setInput("");
+    // 내가 보낸 메시지 즉시 반영 (폴링 중복 방지)
+    if (data.chat.id > lastIdRef.current) {
+      lastIdRef.current = data.chat.id;
+      setMessages((prev) => [...prev, data.chat].slice(-200));
+      scrollToBottom();
+    }
+  };
+
+  return (
+    <>
+      <div className="section-title">실시간 채팅</div>
+      <div className="chat-box">
+        <div className="chat-list" ref={listRef}>
+          {messages.length === 0 && (
+            <div className="empty">첫 메시지를 남겨보세요!</div>
+          )}
+          {messages.map((m) => {
+            const mine = m.nickname === user.nickname;
+            return (
+              <div key={m.id} className={`chat-msg ${mine ? "mine" : ""}`}>
+                {!mine && <div className="chat-nick">{m.nickname}</div>}
+                <div className="chat-bubble">{m.message}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="chat-input">
+          <input
+            placeholder="메시지를 입력하세요..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && send()}
+            maxLength={200}
+          />
+          <button className="btn" onClick={send} disabled={sending || !input.trim()}>
+            전송
+          </button>
+        </div>
+      </div>
+    </>
   );
 }

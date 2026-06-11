@@ -10,9 +10,18 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   nickname  String   @unique
-  points    Int      @default(10000)
+  points    Int      @default(500000)
   createdAt DateTime @default(now())
   bets      Bet[]
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  nickname  String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Match {
