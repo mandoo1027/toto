@@ -637,6 +637,7 @@ a {
   width: 380px;
   max-width: 100vw;
   height: 100vh;
+  height: 100dvh;
   background: var(--card);
   border-left: 1px solid var(--line);
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
@@ -648,7 +649,12 @@ a {
 .chat-panel.open {
   transform: translateX(0);
 }
+/* 입력창이 항상 보이도록 헤더/입력창은 고정, 리스트만 스크롤 */
+.chat-panel .chat-input {
+  flex-shrink: 0;
+}
 .chat-panel-head {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
