@@ -26,6 +26,15 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
   const [toast, setToast] = useState("");
   const [nickname, setNickname] = useState("");
 
+  // 마지막에 입력했던 닉네임을 로그인 화면에 자동으로 채워넣기
+  useEffect(() => {
+    if (user) return;
+    try {
+      const saved = localStorage.getItem("toto_last_nickname");
+      if (saved) setNickname(saved);
+    } catch {}
+  }, [user]);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 2500);
@@ -39,6 +48,9 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
     });
     const data = await res.json();
     if (!res.ok) return showToast(data.error || "로그인 실패");
+    try {
+      localStorage.setItem("toto_last_nickname", data.nickname);
+    } catch {}
     setUser(data);
     showToast(`${data.nickname}님 환영합니다!`);
   };
