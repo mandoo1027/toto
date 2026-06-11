@@ -743,6 +743,15 @@ a {
     width: 100vw;
     border-left: none;
   }
+  /* 전체화면이라 좌우 여백을 더 확보 (노치 안전영역 반영) */
+  .chat-list {
+    padding-left: calc(20px + env(safe-area-inset-left));
+    padding-right: calc(20px + env(safe-area-inset-right));
+  }
+  .chat-input {
+    padding-left: calc(16px + env(safe-area-inset-left));
+    padding-right: calc(16px + env(safe-area-inset-right));
+  }
   .chat-backdrop {
     display: block;
     position: fixed;
