@@ -115,6 +115,12 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
             내 베팅 ({bets.length})
           </div>
           <div
+            className={`tab ${tab === "ranking" ? "active" : ""}`}
+            onClick={() => setTab("ranking")}
+          >
+            랭킹 🏆
+          </div>
+          <div
             className={`tab ${tab === "chat" ? "active" : ""}`}
             onClick={() => setTab("chat")}
           >
@@ -201,6 +207,8 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
             ))}
           </>
         )}
+
+        {tab === "ranking" && <RankingPanel user={user} />}
 
         {tab === "chat" && <ChatPanel user={user} showToast={showToast} />}
       </div>
@@ -385,6 +393,58 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
         </div>
       )}
     </div>
+  );
+}
+
+function RankingPanel({ user }) {
+  const [ranking, setRanking] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const res = await fetch(`${BASE}/api/ranking`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (alive) setRanking(data.ranking);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const medal = (rank) =>
+    rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
+
+  return (
+    <>
+      <div className="section-title">승률 랭킹</div>
+      {ranking === null && <div className="empty">불러오는 중...</div>}
+      {ranking !== null && ranking.length === 0 && (
+        <div className="empty">아직 정산된 베팅이 없습니다.</div>
+      )}
+      {ranking !== null &&
+        ranking.map((r, i) => {
+          const rank = i + 1;
+          const mine = r.nickname === user.nickname;
+          return (
+            <div
+              className={`rank-row ${mine ? "me" : ""} ${
+                rank <= 3 ? "top" : ""
+              }`}
+              key={r.nickname}
+            >
+              <div className="rank-num">{medal(rank)}</div>
+              <div className="rank-info">
+                <div className="rank-nick">{r.nickname}</div>
+                <div className="rank-sub">
+                  {r.won}승 {r.lost}패 · {r.points.toLocaleString()}P
+                </div>
+              </div>
+              <div className="rank-rate">{(r.winRate * 100).toFixed(0)}%</div>
+            </div>
+          );
+        })}
+    </>
   );
 }
 

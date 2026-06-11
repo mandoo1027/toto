@@ -504,6 +504,53 @@ a {
   font-size: 16px;
 }
 
+/* 승률 랭킹 */
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.rank-row.top {
+  border-color: var(--draw);
+  background: rgba(234, 179, 8, 0.06);
+}
+.rank-row.me {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+.rank-num {
+  width: 36px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.rank-info {
+  flex: 1;
+  min-width: 0;
+}
+.rank-nick {
+  font-size: 15px;
+  font-weight: 800;
+}
+.rank-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.rank-rate {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--win);
+  flex-shrink: 0;
+}
+
 /* 실시간 채팅 */
 .chat-box {
   background: var(--card);
