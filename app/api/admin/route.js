@@ -75,24 +75,16 @@ export async function PATCH(req) {
     where: { matchId, status: "PENDING" },
   });
 
+  // 적중 여부 기록만 남기고 포인트 증액은 하지 않음 (랭킹은 적중 기록 기반)
   const ops = [];
   for (const bet of bets) {
     const won = bet.pick === result;
-    const payout = won ? Math.round(bet.amount * bet.oddsAtBet) : 0;
     ops.push(
       prisma.bet.update({
         where: { id: bet.id },
-        data: { status: won ? "WON" : "LOST", payout },
+        data: { status: won ? "WON" : "LOST", payout: 0 },
       })
     );
-    if (won) {
-      ops.push(
-        prisma.user.update({
-          where: { id: bet.userId },
-          data: { points: { increment: payout } },
-        })
-      );
-    }
   }
 
   ops.push(

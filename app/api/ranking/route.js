@@ -34,8 +34,8 @@ export async function GET() {
     .filter((u) => u.settled > 0)
     .sort((a, b) => {
       if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-      if (b.settled !== a.settled) return b.settled - a.settled;
-      return b.points - a.points;
+      if (b.won !== a.won) return b.won - a.won;
+      return b.settled - a.settled;
     });
 
   return NextResponse.json({ ranking });

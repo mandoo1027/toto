@@ -203,9 +203,7 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
                     <span className="result-pending">대기중</span>
                   )}
                   {b.status === "WON" && (
-                    <span className="result-won">
-                      +{b.payout.toLocaleString()}P
-                    </span>
+                    <span className="result-won">적중 ✓</span>
                   )}
                   {b.status === "LOST" && <span className="result-lost">낙첨</span>}
                 </div>
@@ -358,7 +356,7 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
             <span className="result-pending">대기중</span>
           )}
           {myBet.status === "WON" && (
-            <span className="result-won">+{myBet.payout.toLocaleString()}P 당첨</span>
+            <span className="result-won">적중 ✓</span>
           )}
           {myBet.status === "LOST" && <span className="result-lost">낙첨</span>}
         </div>
@@ -465,7 +463,7 @@ function RankingPanel({ user }) {
               <div className="rank-info">
                 <div className="rank-nick">{r.nickname}</div>
                 <div className="rank-sub">
-                  {r.won}승 {r.lost}패 · {r.points.toLocaleString()}P
+                  {r.won}적중 {r.lost}실패 · {r.settled}전
                 </div>
               </div>
               <div className="rank-rate">{(r.winRate * 100).toFixed(0)}%</div>
