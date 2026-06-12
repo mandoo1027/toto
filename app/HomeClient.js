@@ -310,14 +310,22 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
 
       <div className="odds-row">
         {["HOME", "DRAW", "AWAY"].map((p) => {
-          const isWon = isFinished && match.result === p;
-          const isMyPick = myBet && myBet.pick === p;
+          const isAnswer = isFinished && match.result === p; // 실제 정답
+          const isMyPick = myBet && myBet.pick === p; // 내가 선택한 것
+          // 정산된 경기: 결과별 색상 클래스
+          // 내 선택=정답 → 골드, 내 선택=오답 → 빨강, 정답(내 선택 아님) → 초록
+          let resultClass = "";
+          if (isFinished) {
+            if (isMyPick && isAnswer) resultClass = "correct-pick";
+            else if (isMyPick && !isAnswer) resultClass = "wrong-pick";
+            else if (isAnswer) resultClass = "answer";
+          }
           return (
             <div
               key={p}
               className={`odds-btn ${pick === p ? "selected" : ""} ${
-                isWon ? "won" : ""
-              } ${isMyPick ? "mypick" : ""}`}
+                !isFinished && isMyPick ? "mypick" : ""
+              } ${resultClass}`}
               onClick={() => !locked && setPick(p)}
               style={locked ? { cursor: "default" } : {}}
             >

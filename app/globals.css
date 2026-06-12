@@ -205,6 +205,36 @@ a {
   border-color: var(--win);
   background: rgba(34, 197, 94, 0.15);
 }
+
+/* 정산 후 결과 색상 */
+/* 정답이면서 내 선택 → 골드(적중) */
+.odds-btn.correct-pick {
+  border-color: var(--draw);
+  background: rgba(234, 179, 8, 0.18);
+  position: relative;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.45);
+}
+.odds-btn.correct-pick .label {
+  color: #fde047;
+}
+/* 내 선택인데 오답 → 빨강 */
+.odds-btn.wrong-pick {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.16);
+  position: relative;
+}
+.odds-btn.wrong-pick .label {
+  color: #fca5a5;
+}
+/* 실제 정답(내 선택 아님) → 초록 */
+.odds-btn.answer {
+  border-color: var(--win);
+  background: rgba(34, 197, 94, 0.16);
+}
+.odds-btn.answer .label {
+  color: #86efac;
+}
+
 .odds-btn.mypick {
   border-color: var(--draw);
   background: rgba(234, 179, 8, 0.12);
