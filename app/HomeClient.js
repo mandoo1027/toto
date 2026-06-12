@@ -424,6 +424,8 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
 
 function RankingPanel({ user }) {
   const [ranking, setRanking] = useState(null);
+  const [detail, setDetail] = useState(null); // 선택된 유저 베팅 내역
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -437,6 +439,23 @@ function RankingPanel({ user }) {
       alive = false;
     };
   }, []);
+
+  const openDetail = async (nickname) => {
+    setDetail({ nickname, bets: null });
+    setDetailLoading(true);
+    try {
+      const res = await fetch(
+        `${BASE}/api/user-bets?nickname=${encodeURIComponent(nickname)}`
+      );
+      const data = await res.json();
+      if (res.ok) setDetail(data);
+      else setDetail({ nickname, bets: [], error: data.error });
+    } catch {
+      setDetail({ nickname, bets: [], error: "불러오기 실패" });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const medal = (rank) =>
     rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
@@ -454,10 +473,11 @@ function RankingPanel({ user }) {
           const mine = r.nickname === user.nickname;
           return (
             <div
-              className={`rank-row ${mine ? "me" : ""} ${
+              className={`rank-row clickable ${mine ? "me" : ""} ${
                 rank <= 3 ? "top" : ""
               }`}
               key={r.nickname}
+              onClick={() => openDetail(r.nickname)}
             >
               <div className="rank-num">{medal(rank)}</div>
               <div className="rank-info">
@@ -470,7 +490,77 @@ function RankingPanel({ user }) {
             </div>
           );
         })}
+
+      {detail && (
+        <UserBetsModal
+          detail={detail}
+          loading={detailLoading}
+          onClose={() => setDetail(null)}
+        />
+      )}
     </>
+  );
+}
+
+function UserBetsModal({ detail, loading, onClose }) {
+  const bets = detail.bets;
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <span className="modal-title">{detail.nickname}님의 베팅 결과</span>
+          <button className="modal-close" onClick={onClose} aria-label="닫기">
+            ✕
+          </button>
+        </div>
+
+        {!loading && detail.settled != null && (
+          <div className="modal-summary">
+            {detail.won}적중 {detail.lost}실패 · {detail.settled}전
+            {detail.settled > 0 &&
+              ` · 승률 ${((detail.won / detail.settled) * 100).toFixed(0)}%`}
+          </div>
+        )}
+
+        <div className="modal-body">
+          {loading || bets === null ? (
+            <div className="empty">불러오는 중...</div>
+          ) : bets.length === 0 ? (
+            <div className="empty">{detail.error || "베팅 내역이 없습니다."}</div>
+          ) : (
+            bets.map((b) => {
+              const pickWon = b.status === "WON";
+              const pickLost = b.status === "LOST";
+              return (
+                <div className="ubet-row" key={b.id}>
+                  <div className="ubet-match">
+                    {b.homeFlag} {b.homeTeam} vs {b.awayTeam} {b.awayFlag}
+                    {b.matchStatus === "FINISHED" &&
+                      b.homeScore != null &&
+                      b.awayScore != null && (
+                        <span className="ubet-score">
+                          {" "}
+                          ({b.homeScore}:{b.awayScore})
+                        </span>
+                      )}
+                  </div>
+                  <div className="ubet-meta">
+                    <span className="ubet-pick">
+                      선택: {{ HOME: "홈승", DRAW: "무", AWAY: "원정승" }[b.pick]}
+                    </span>
+                    {pickWon && <span className="result-won">적중 ✓</span>}
+                    {pickLost && <span className="result-lost">낙첨</span>}
+                    {b.status === "PENDING" && (
+                      <span className="result-pending">대기중</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
