@@ -445,6 +445,20 @@ function RankingPanel({ user }) {
   const medal = (rank) =>
     rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
 
+  // 정렬 키가 동일하면 동률 → 공동 순위 부여 (예: 1위 6명이면 모두 1위)
+  const sameRank = (a, b) =>
+    a.winRate === b.winRate && a.won === b.won && a.settled === b.settled;
+
+  const rankList = [];
+  if (ranking !== null) {
+    ranking.forEach((r, i) => {
+      // 앞 사람과 동률이면 같은 순위, 아니면 인덱스+1 (표준 경쟁 순위)
+      const rank =
+        i > 0 && sameRank(r, ranking[i - 1]) ? rankList[i - 1].rank : i + 1;
+      rankList.push({ ...r, rank });
+    });
+  }
+
   return (
     <>
       <div className="section-title">승률 랭킹</div>
@@ -452,9 +466,8 @@ function RankingPanel({ user }) {
       {ranking !== null && ranking.length === 0 && (
         <div className="empty">아직 정산된 베팅이 없습니다.</div>
       )}
-      {ranking !== null &&
-        ranking.map((r, i) => {
-          const rank = i + 1;
+      {rankList.map((r) => {
+          const rank = r.rank;
           const mine = r.nickname === user.nickname;
           return (
             <div
