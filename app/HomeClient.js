@@ -104,8 +104,7 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
     );
   }
 
-  const upcoming = matches.filter((m) => m.status === "SCHEDULED");
-  const finished = matches.filter((m) => m.status === "FINISHED");
+  // 예정/종료 구분 없이 킥오프 시간 순서대로 한 목록으로 표시 (서버에서 kickoff asc 정렬됨)
   // matchId -> 내 베팅 정보 맵
   const myBetByMatch = new Map(bets.map((b) => [b.matchId, b]));
 
@@ -136,16 +135,17 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
 
         {tab === "matches" && (
           <>
-            <div className="section-title">진행 예정 경기</div>
-            {upcoming.length === 0 && (
-              <div className="empty">예정된 경기가 없습니다.</div>
+            <div className="section-title">경기 일정</div>
+            {matches.length === 0 && (
+              <div className="empty">경기가 없습니다.</div>
             )}
-            {upcoming.map((m) => (
+            {matches.map((m) => (
               <MatchCard
                 key={m.id}
                 match={m}
                 user={user}
                 myBet={myBetByMatch.get(m.id)}
+                finished={m.status === "FINISHED"}
                 onBet={async (pick) => {
                   const res = await fetch(`${BASE}/api/bet`, {
                     method: "POST",
@@ -164,21 +164,6 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
                 }}
               />
             ))}
-
-            {finished.length > 0 && (
-              <>
-                <div className="section-title">종료된 경기</div>
-                {finished.map((m) => (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    user={user}
-                    myBet={myBetByMatch.get(m.id)}
-                    finished
-                  />
-                ))}
-              </>
-            )}
           </>
         )}
 

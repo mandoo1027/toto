@@ -14,7 +14,8 @@ export async function GET(req) {
     where: { nickname },
     include: {
       bets: {
-        orderBy: { createdAt: "desc" },
+        // 메인 경기 목록과 동일하게 킥오프 시간 순서로 정렬
+        orderBy: { match: { kickoff: "asc" } },
         include: {
           match: {
             select: {
