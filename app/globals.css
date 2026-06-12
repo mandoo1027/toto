@@ -102,6 +102,26 @@ a {
   margin-bottom: 12px;
 }
 
+/* 경기 카드 상단: 조/차전 + 일시 중앙 정렬, 일시 크게 */
+.match-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.match-stage {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.match-datetime {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+}
+
 .match-teams {
   display: flex;
   align-items: center;

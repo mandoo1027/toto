@@ -281,16 +281,13 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
 
   return (
     <div className="match-card">
-      <div className="match-meta">
-        <span>{match.stage}</span>
-        <span>
-          {!isFinished && timeLocked && (
-            <span className="status-tag finished" style={{ marginRight: 8 }}>
-              베팅 마감
-            </span>
-          )}
-          {fmtKST(match.kickoff)}
-        </span>
+      <div className="match-head">
+        {match.stage && <div className="match-stage">{match.stage}</div>}
+        <div className="match-datetime">{fmtKST(match.kickoff)}</div>
+        {!isFinished && timeLocked && (
+          <span className="status-tag finished">베팅 마감</span>
+        )}
+        {isFinished && <span className="status-tag finished">경기 종료</span>}
       </div>
 
       <div className="match-teams">
