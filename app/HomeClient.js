@@ -30,6 +30,57 @@ function fmtCountdown(ms) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// 부드러운 애니메이션이 들어간 커스텀 확인 모달
+function ConfirmModal({ open, title, message, confirmText, cancelText, onConfirm, onCancel }) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      // 다음 프레임에 show를 켜서 enter 애니메이션 트리거
+      const id = requestAnimationFrame(() => setShow(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setShow(false);
+  }, [open]);
+
+  // ESC 키로 취소
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onCancel]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className={`confirm-backdrop ${show ? "show" : ""}`}
+      onClick={onCancel}
+    >
+      <div
+        className={`confirm-box ${show ? "show" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        {title && <div className="confirm-title">{title}</div>}
+        <div className="confirm-message">{message}</div>
+        <div className="confirm-actions">
+          <button className="confirm-btn cancel" onClick={onCancel}>
+            {cancelText || "취소"}
+          </button>
+          <button className="confirm-btn ok" onClick={onConfirm} autoFocus>
+            {confirmText || "확인"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeClient({ initialUser, matches, initialBets }) {
   const [user, setUser] = useState(initialUser);
   const [bets, setBets] = useState(initialBets);
@@ -248,6 +299,7 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   const [showBets, setShowBets] = useState(false);
   const [matchBets, setMatchBets] = useState(null);
   const [now, setNow] = useState(() => Date.now());
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const alreadyBet = !!myBet;
 
   // 베팅 마감: 킥오프 정각
@@ -277,15 +329,15 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
     }
   };
 
-  const submit = async () => {
+  const submit = () => {
     if (!pick) return;
     // 같은 선택이면 무시
     if (alreadyBet && myBet.pick === pick) return;
-    const msg = alreadyBet
-      ? `베팅을 [${PICK_LABEL[myBet.pick]}] → [${PICK_LABEL[pick]}] 로 변경합니다.\n계속하시겠습니까?`
-      : `[${PICK_LABEL[pick]}] 에 베팅합니다.\n경기 시작 전까지 변경할 수 있습니다.\n계속하시겠습니까?`;
-    const ok = window.confirm(msg);
-    if (!ok) return;
+    setConfirmOpen(true);
+  };
+
+  const doBet = async () => {
+    setConfirmOpen(false);
     setLoading(true);
     const done = await onBet(pick);
     setLoading(false);
@@ -441,6 +493,34 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmOpen}
+        title={alreadyBet ? "베팅 변경" : "베팅 확인"}
+        message={
+          alreadyBet ? (
+            <>
+              베팅을{" "}
+              <b className="confirm-pick">{PICK_LABEL[myBet.pick]}</b> →{" "}
+              <b className="confirm-pick highlight">{PICK_LABEL[pick]}</b> 로
+              변경합니다.
+              <br />
+              <span className="confirm-sub">경기 시작 전까지 다시 바꿀 수 있어요.</span>
+            </>
+          ) : (
+            <>
+              <b className="confirm-pick highlight">{PICK_LABEL[pick]}</b> 에
+              베팅합니다.
+              <br />
+              <span className="confirm-sub">경기 시작 전까지 변경할 수 있어요.</span>
+            </>
+          )
+        }
+        confirmText={alreadyBet ? "변경하기" : "베팅하기"}
+        cancelText="취소"
+        onConfirm={doBet}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

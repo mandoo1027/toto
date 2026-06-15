@@ -952,3 +952,108 @@ a {
     bottom: 16px;
   }
 }
+
+/* ===== 커스텀 확인 모달 (부드러운 애니메이션) ===== */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 8, 18, 0);
+  backdrop-filter: blur(0px);
+  transition: background 0.28s ease, backdrop-filter 0.28s ease;
+}
+.confirm-backdrop.show {
+  background: rgba(5, 8, 18, 0.62);
+  backdrop-filter: blur(4px);
+}
+.confirm-box {
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(160deg, var(--card2), var(--card));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px 22px 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(59, 130, 246, 0.08) inset;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(16px) scale(0.94);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.confirm-box.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.confirm-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.confirm-message {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.confirm-pick {
+  display: inline-block;
+  min-width: 30px;
+  padding: 1px 9px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-weight: 800;
+}
+.confirm-pick.highlight {
+  background: rgba(59, 130, 246, 0.16);
+  border-color: var(--primary);
+  color: #bcd4ff;
+}
+.confirm-sub {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.85;
+}
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+.confirm-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  transition: transform 0.12s ease, filter 0.15s ease, background 0.15s ease;
+}
+.confirm-btn:active {
+  transform: scale(0.96);
+}
+.confirm-btn.cancel {
+  background: var(--bg);
+  color: var(--muted);
+}
+.confirm-btn.cancel:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+.confirm-btn.ok {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+}
+.confirm-btn.ok:hover {
+  filter: brightness(1.08);
+}
