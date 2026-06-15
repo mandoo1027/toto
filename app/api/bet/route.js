@@ -3,10 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 
 const VALID_PICKS = ["HOME", "DRAW", "AWAY"];
-// 한 게임당 베팅 금액 고정 (변경 불가)
+// 한 게임당 베팅 금액 고정
 const BET_AMOUNT = 5000;
-// 베팅 마감: 킥오프 10분 전
-const LOCK_BEFORE_MS = 10 * 60 * 1000;
 
 // 베팅 등록
 export async function POST(req) {
@@ -32,20 +30,9 @@ export async function POST(req) {
   if (match.status !== "SCHEDULED") {
     return NextResponse.json({ error: "베팅이 마감된 경기입니다." }, { status: 400 });
   }
-  if (new Date(match.kickoff).getTime() - LOCK_BEFORE_MS <= Date.now()) {
+  if (new Date(match.kickoff).getTime() <= Date.now()) {
     return NextResponse.json(
-      { error: "베팅이 마감되었습니다. (킥오프 10분 전 마감)" },
-      { status: 400 }
-    );
-  }
-
-  // 동일 경기 중복 베팅 방지
-  const existing = await prisma.bet.findFirst({
-    where: { userId: user.id, matchId },
-  });
-  if (existing) {
-    return NextResponse.json(
-      { error: "이미 이 경기에 베팅하셨습니다." },
+      { error: "베팅이 마감되었습니다. (킥오프 시각 마감)" },
       { status: 400 }
     );
   }
@@ -53,7 +40,25 @@ export async function POST(req) {
   const odds =
     pick === "HOME" ? match.oddsHome : pick === "DRAW" ? match.oddsDraw : match.oddsAway;
 
-  // 포인트 차감 + 베팅 생성 (트랜잭션)
+  // 기존 베팅이 있으면 선택 변경 (환급 후 재차감), 없으면 신규 베팅
+  const existing = await prisma.bet.findFirst({
+    where: { userId: user.id, matchId },
+  });
+
+  if (existing) {
+    // 이미 같은 선택이면 변경 불필요
+    if (existing.pick === pick) {
+      return NextResponse.json({ ok: true, betId: existing.id, unchanged: true });
+    }
+    // 환급(+5000) 후 재차감(-5000) → 실질 변동 없으므로 선택/배당만 갱신
+    const bet = await prisma.bet.update({
+      where: { id: existing.id },
+      data: { pick, amount: amt, oddsAtBet: odds },
+    });
+    return NextResponse.json({ ok: true, betId: bet.id, changed: true });
+  }
+
+  // 신규 베팅: 포인트 차감 + 생성 (트랜잭션)
   const [, bet] = await prisma.$transaction([
     prisma.user.update({
       where: { id: user.id },

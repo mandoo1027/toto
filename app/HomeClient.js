@@ -18,8 +18,8 @@ function fmtKST(iso) {
 
 const PICK_LABEL = { HOME: "승", DRAW: "무", AWAY: "패" };
 const BET_AMOUNT = 5000;
-// 베팅 마감: 킥오프 10분 전
-const LOCK_BEFORE_MS = 10 * 60 * 1000;
+// 베팅 마감: 킥오프 정각 / 마감 10분 전부터 "마감 임박" 카운트다운
+const CLOSING_SOON_MS = 10 * 60 * 1000;
 
 // 남은 시간(ms)을 "MM:SS" 형식으로 변환
 function fmtCountdown(ms) {
@@ -250,13 +250,12 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   const [now, setNow] = useState(() => Date.now());
   const alreadyBet = !!myBet;
 
-  // 베팅 마감: 킥오프 10분 전
-  const kickoffAt = new Date(match.kickoff).getTime();
-  const lockAt = kickoffAt - LOCK_BEFORE_MS;
+  // 베팅 마감: 킥오프 정각
+  const lockAt = new Date(match.kickoff).getTime();
   const timeLocked = now >= lockAt;
-  const msLeft = lockAt - now; // 마감까지 남은 시간
-  // 마감 10분 전부터 카운트다운 표시 (마감 전 + 임박 구간)
-  const closingSoon = !timeLocked && msLeft <= LOCK_BEFORE_MS;
+  const msLeft = lockAt - now; // 마감(킥오프)까지 남은 시간
+  // 마감 10분 전부터 카운트다운 표시
+  const closingSoon = !timeLocked && msLeft <= CLOSING_SOON_MS;
 
   // 아직 마감 전이면 1초마다 현재 시각 갱신 (마감되면 타이머 중단)
   useEffect(() => {
@@ -280,9 +279,12 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
 
   const submit = async () => {
     if (!pick) return;
-    const ok = window.confirm(
-      `[${PICK_LABEL[pick]}] 에 ${BET_AMOUNT.toLocaleString()}P 를 베팅합니다.\n\n⚠️ 한 번 베팅하면 취소·수정할 수 없습니다.\n계속하시겠습니까?`
-    );
+    // 같은 선택이면 무시
+    if (alreadyBet && myBet.pick === pick) return;
+    const msg = alreadyBet
+      ? `베팅을 [${PICK_LABEL[myBet.pick]}] → [${PICK_LABEL[pick]}] 로 변경합니다.\n계속하시겠습니까?`
+      : `[${PICK_LABEL[pick]}] 에 베팅합니다.\n경기 시작 전까지 변경할 수 있습니다.\n계속하시겠습니까?`;
+    const ok = window.confirm(msg);
     if (!ok) return;
     setLoading(true);
     const done = await onBet(pick);
@@ -293,7 +295,8 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   };
 
   const isFinished = finished || match.status === "FINISHED";
-  const locked = isFinished || alreadyBet || timeLocked;
+  // 킥오프 전까지는 베팅/변경 가능 (이미 베팅했어도 잠그지 않음)
+  const locked = isFinished || timeLocked;
 
   return (
     <div className="match-card">
@@ -381,19 +384,23 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
       {!locked && (
         <div className="bet-panel">
           <div className="bet-amount-fixed">
-            베팅 금액 <b>{BET_AMOUNT.toLocaleString()}P</b> 고정
+            {alreadyBet
+              ? "경기 시작 전까지 선택을 변경할 수 있습니다"
+              : `베팅 금액 ${BET_AMOUNT.toLocaleString()}P 고정`}
           </div>
           <button
             className="btn"
             onClick={submit}
-            disabled={!pick || loading}
+            disabled={
+              !pick || loading || (alreadyBet && myBet.pick === pick)
+            }
           >
-            {loading ? "..." : "베팅하기"}
+            {loading ? "..." : alreadyBet ? "선택 변경하기" : "베팅하기"}
           </button>
         </div>
       )}
 
-      {!isFinished && !alreadyBet && timeLocked && (
+      {!isFinished && timeLocked && (
         <div className="bet-locked">🔒 베팅이 마감되었습니다 (킥오프 시각 마감)</div>
       )}
 
