@@ -351,28 +351,6 @@ a {
   border-color: var(--primary);
   color: var(--text);
 }
-.test-countdown-btn {
-  width: 100%;
-  margin-top: 8px;
-  background: transparent;
-  border: 1px dashed rgba(239, 68, 68, 0.4);
-  color: var(--muted);
-  border-radius: 10px;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  opacity: 0.7;
-}
-.test-countdown-btn:hover:not(:disabled) {
-  border-color: #ef4444;
-  color: #ef4444;
-  opacity: 1;
-}
-.test-countdown-btn:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
 .bets-board {
   margin-top: 10px;
   padding-top: 12px;

@@ -248,20 +248,14 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   const [showBets, setShowBets] = useState(false);
   const [matchBets, setMatchBets] = useState(null);
   const [now, setNow] = useState(() => Date.now());
-  const [testMs, setTestMs] = useState(null); // 테스트용 마감 임박 카운트다운
   const alreadyBet = !!myBet;
 
   // 베팅 마감: 킥오프 정각
   const lockAt = new Date(match.kickoff).getTime();
-  const realTimeLocked = now >= lockAt;
-  const realMsLeft = lockAt - now; // 마감(킥오프)까지 남은 시간
-
-  // 테스트 모드면 강제 카운트다운 값 사용, 아니면 실제 남은 시간
-  const testing = testMs !== null;
-  const msLeft = testing ? testMs : realMsLeft;
-  const timeLocked = testing ? false : realTimeLocked;
-  // 마감 10분 전부터 카운트다운 표시 (테스트 중엔 항상 표시)
-  const closingSoon = testing || (!timeLocked && msLeft <= CLOSING_SOON_MS);
+  const timeLocked = now >= lockAt;
+  const msLeft = lockAt - now; // 마감(킥오프)까지 남은 시간
+  // 마감 10분 전부터 카운트다운 표시
+  const closingSoon = !timeLocked && msLeft <= CLOSING_SOON_MS;
 
   // 아직 마감 전이면 1초마다 현재 시각 갱신 (마감되면 타이머 중단)
   useEffect(() => {
@@ -270,19 +264,6 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [finished, match.status, lockAt, now]);
-
-  // 테스트 카운트다운: 1초마다 감소, 0이 되면 종료
-  useEffect(() => {
-    if (testMs === null) return;
-    if (testMs <= 0) {
-      const t = setTimeout(() => setTestMs(null), 1200);
-      return () => clearTimeout(t);
-    }
-    const timer = setInterval(() => {
-      setTestMs((v) => (v === null ? null : Math.max(0, v - 1000)));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [testMs]);
 
   const toggleBets = async () => {
     const next = !showBets;
@@ -426,16 +407,6 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
       <button className="bets-toggle" onClick={toggleBets}>
         {showBets ? "▲ 베팅 현황 닫기" : "▼ 베팅 현황 보기"}
       </button>
-
-      {!isFinished && (
-        <button
-          className="test-countdown-btn"
-          onClick={() => setTestMs(10000)}
-          disabled={testing}
-        >
-          {testing ? "⏰ 미리보기 진행중..." : "🧪 마감 임박 미리보기 (10초)"}
-        </button>
-      )}
 
       {showBets && (
         <div className="bets-board">
