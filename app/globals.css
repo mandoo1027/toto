@@ -121,6 +121,37 @@ a {
   color: var(--text);
   text-align: center;
 }
+/* 마감 임박 카운트다운 (눈에 띄게) */
+.closing-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  font-size: 13px;
+  font-weight: 800;
+  animation: pulse-closing 1s ease-in-out infinite;
+}
+.closing-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: #fecaca;
+}
+@keyframes pulse-closing {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
+    transform: scale(1.04);
+  }
+}
 
 .match-teams {
   display: flex;
@@ -200,6 +231,19 @@ a {
   font-size: 18px;
   font-weight: 800;
   margin-top: 4px;
+}
+/* 배당률 참고 표시 (작게) */
+.odds-btn .odds-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.odds-note {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin: -4px 0 10px;
 }
 .odds-btn.won {
   border-color: var(--win);

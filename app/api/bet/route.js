@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/session";
 const VALID_PICKS = ["HOME", "DRAW", "AWAY"];
 // 한 게임당 베팅 금액 고정 (변경 불가)
 const BET_AMOUNT = 5000;
+// 베팅 마감: 킥오프 10분 전
+const LOCK_BEFORE_MS = 10 * 60 * 1000;
 
 // 베팅 등록
 export async function POST(req) {
@@ -30,9 +32,9 @@ export async function POST(req) {
   if (match.status !== "SCHEDULED") {
     return NextResponse.json({ error: "베팅이 마감된 경기입니다." }, { status: 400 });
   }
-  if (new Date(match.kickoff).getTime() <= Date.now()) {
+  if (new Date(match.kickoff).getTime() - LOCK_BEFORE_MS <= Date.now()) {
     return NextResponse.json(
-      { error: "베팅이 마감되었습니다. (킥오프 시각 마감)" },
+      { error: "베팅이 마감되었습니다. (킥오프 10분 전 마감)" },
       { status: 400 }
     );
   }

@@ -18,6 +18,17 @@ function fmtKST(iso) {
 
 const PICK_LABEL = { HOME: "승", DRAW: "무", AWAY: "패" };
 const BET_AMOUNT = 5000;
+// 베팅 마감: 킥오프 10분 전
+const LOCK_BEFORE_MS = 10 * 60 * 1000;
+
+// 남은 시간(ms)을 "MM:SS" 형식으로 변환
+function fmtCountdown(ms) {
+  if (ms < 0) ms = 0;
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 export default function HomeClient({ initialUser, matches, initialBets }) {
   const [user, setUser] = useState(initialUser);
@@ -239,8 +250,13 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   const [now, setNow] = useState(() => Date.now());
   const alreadyBet = !!myBet;
 
-  const lockAt = new Date(match.kickoff).getTime();
+  // 베팅 마감: 킥오프 10분 전
+  const kickoffAt = new Date(match.kickoff).getTime();
+  const lockAt = kickoffAt - LOCK_BEFORE_MS;
   const timeLocked = now >= lockAt;
+  const msLeft = lockAt - now; // 마감까지 남은 시간
+  // 마감 10분 전부터 카운트다운 표시 (마감 전 + 임박 구간)
+  const closingSoon = !timeLocked && msLeft <= LOCK_BEFORE_MS;
 
   // 아직 마감 전이면 1초마다 현재 시각 갱신 (마감되면 타이머 중단)
   useEffect(() => {
@@ -284,6 +300,11 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
       <div className="match-head">
         {match.stage && <div className="match-stage">{match.stage}</div>}
         <div className="match-datetime">{fmtKST(match.kickoff)}</div>
+        {!isFinished && closingSoon && (
+          <div className="closing-soon">
+            ⏰ 마감 임박 <span className="closing-time">{fmtCountdown(msLeft)}</span>
+          </div>
+        )}
         {!isFinished && timeLocked && (
           <span className="status-tag finished">베팅 마감</span>
         )}
@@ -312,6 +333,7 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
         {["HOME", "DRAW", "AWAY"].map((p) => {
           const isAnswer = isFinished && match.result === p; // 실제 정답
           const isMyPick = myBet && myBet.pick === p; // 내가 선택한 것
+          const odds = { HOME: match.oddsHome, DRAW: match.oddsDraw, AWAY: match.oddsAway }[p];
           // 정산된 경기: 결과별 색상 클래스
           // 내 선택=정답 → 골드, 내 선택=오답 → 빨강, 정답(내 선택 아님) → 초록
           let resultClass = "";
@@ -330,11 +352,15 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
               style={locked ? { cursor: "default" } : {}}
             >
               <div className="label">{PICK_LABEL[p]}</div>
+              {odds != null && (
+                <div className="odds-val">{Number(odds).toFixed(2)}</div>
+              )}
               {isMyPick && <div className="mypick-tag">내 베팅</div>}
             </div>
           );
         })}
       </div>
+      <div className="odds-note">※ 배당률은 참고용입니다 (포인트 지급 없음)</div>
 
       {myBet && (
         <div className="mybet-info">
