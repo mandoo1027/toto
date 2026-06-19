@@ -305,6 +305,11 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   const [comments, setComments] = useState(null);
   const [commentInput, setCommentInput] = useState("");
   const [commentSending, setCommentSending] = useState(false);
+  // 댓글 편집/삭제 상태
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const lastCommentIdRef = useRef(0);
   const commentListRef = useRef(null);
   const alreadyBet = !!myBet;
@@ -356,7 +361,10 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
         lastCommentIdRef.current = data.comments[data.comments.length - 1].id;
         setComments((prev) => {
           const base = firstLoad ? [] : prev || [];
-          return [...base, ...data.comments].slice(-200);
+          // 같은 id가 이미 있으면(수정 등) 중복 추가 방지
+          const seen = new Set(base.map((c) => c.id));
+          const fresh = data.comments.filter((c) => !seen.has(c.id));
+          return [...base, ...fresh].slice(-200);
         });
       } catch {}
     };
@@ -397,6 +405,50 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
     } finally {
       setCommentSending(false);
     }
+  };
+
+  // 댓글 수정 시작/취소
+  const startEdit = (c) => {
+    setEditingId(c.id);
+    setEditText(c.message);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditText("");
+  };
+
+  // 댓글 수정 저장
+  const saveEdit = async (id) => {
+    const text = editText.trim();
+    if (!text || editSaving) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`${BASE}/api/match-comments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      setComments((prev) =>
+        (prev || []).map((c) => (c.id === id ? { ...c, message: data.comment.message } : c))
+      );
+      cancelEdit();
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // 댓글 삭제 실행
+  const doDeleteComment = async () => {
+    const id = deleteTarget;
+    setDeleteTarget(null);
+    if (id == null) return;
+    const res = await fetch(`${BASE}/api/match-comments/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) return;
+    setComments((prev) => (prev || []).filter((c) => c.id !== id));
   };
 
   const submit = () => {
@@ -582,10 +634,60 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
             ) : (
               comments.map((c) => {
                 const mine = c.nickname === user.nickname;
+                const isEditing = editingId === c.id;
                 return (
                   <div key={c.id} className={`comment-row ${mine ? "mine" : ""}`}>
-                    <span className="comment-nick">{c.nickname}</span>
-                    <span className="comment-text">{c.message}</span>
+                    <div className="comment-head">
+                      <span className="comment-nick">{c.nickname}</span>
+                      {mine && !isEditing && (
+                        <span className="comment-actions">
+                          <button
+                            className="comment-action-btn"
+                            onClick={() => startEdit(c)}
+                          >
+                            수정
+                          </button>
+                          <button
+                            className="comment-action-btn danger"
+                            onClick={() => setDeleteTarget(c.id)}
+                          >
+                            삭제
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                    {isEditing ? (
+                      <div className="comment-edit">
+                        <input
+                          className="comment-edit-input"
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveEdit(c.id);
+                            if (e.key === "Escape") cancelEdit();
+                          }}
+                          maxLength={200}
+                          autoFocus
+                        />
+                        <div className="comment-edit-actions">
+                          <button
+                            className="comment-action-btn"
+                            onClick={cancelEdit}
+                          >
+                            취소
+                          </button>
+                          <button
+                            className="comment-action-btn primary"
+                            onClick={() => saveEdit(c.id)}
+                            disabled={editSaving || !editText.trim()}
+                          >
+                            저장
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="comment-text">{c.message}</span>
+                    )}
                   </div>
                 );
               })
@@ -609,6 +711,22 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={deleteTarget != null}
+        title="댓글 삭제"
+        message={
+          <>
+            이 댓글을 삭제할까요?
+            <br />
+            <span className="confirm-sub">삭제한 댓글은 복구할 수 없어요.</span>
+          </>
+        }
+        confirmText="삭제하기"
+        cancelText="취소"
+        onConfirm={doDeleteComment}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       <ConfirmModal
         open={confirmOpen}

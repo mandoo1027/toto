@@ -450,6 +450,68 @@ a {
 .comment-text {
   color: var(--text);
 }
+.comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.comment-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.comment-action-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.comment-action-btn:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.comment-action-btn.danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+.comment-action-btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.comment-action-btn.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.comment-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+.comment-edit-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+.comment-edit-input:focus {
+  outline: none;
+}
+.comment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
 .comments-input {
   display: flex;
   gap: 8px;
