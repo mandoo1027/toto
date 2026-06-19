@@ -396,6 +396,84 @@ a {
   padding: 6px 0;
 }
 
+/* 경기별 댓글 */
+.comments-toggle {
+  width: 100%;
+  margin-top: 8px;
+  background: transparent;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.comments-toggle:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.comments-box {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.comments-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+.comment-row {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+  word-break: break-word;
+}
+.comment-row.mine {
+  border-color: var(--primary);
+  background: rgba(234, 179, 8, 0.1);
+}
+.comment-nick {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--muted);
+  margin-right: 8px;
+}
+.comment-row.mine .comment-nick {
+  color: var(--draw);
+}
+.comment-text {
+  color: var(--text);
+}
+.comments-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.comments-input input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+.comments-input input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.comments-input .btn {
+  flex-shrink: 0;
+  padding: 9px 16px;
+}
+
 .bet-panel {
   margin-top: 14px;
   padding-top: 14px;

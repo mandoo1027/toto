@@ -300,6 +300,13 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
   const [matchBets, setMatchBets] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // 댓글 상태
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState(null);
+  const [commentInput, setCommentInput] = useState("");
+  const [commentSending, setCommentSending] = useState(false);
+  const lastCommentIdRef = useRef(0);
+  const commentListRef = useRef(null);
   const alreadyBet = !!myBet;
 
   // 베팅 마감: 킥오프 정각
@@ -326,6 +333,69 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
         const data = await res.json();
         setMatchBets(data.byMatch[match.id] || { HOME: [], DRAW: [], AWAY: [] });
       }
+    }
+  };
+
+  const toggleComments = () => setShowComments((v) => !v);
+
+  // 댓글 영역이 펼쳐져 있는 동안만 폴링 (2.5초). 닫으면 타이머 정리.
+  useEffect(() => {
+    if (!showComments) return;
+    let alive = true;
+
+    const poll = async () => {
+      try {
+        const after = lastCommentIdRef.current;
+        const res = await fetch(
+          `${BASE}/api/match-comments?matchId=${match.id}&after=${after}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!alive || data.comments.length === 0) return;
+        const firstLoad = after === 0;
+        lastCommentIdRef.current = data.comments[data.comments.length - 1].id;
+        setComments((prev) => {
+          const base = firstLoad ? [] : prev || [];
+          return [...base, ...data.comments].slice(-200);
+        });
+      } catch {}
+    };
+
+    poll();
+    const timer = setInterval(poll, 2500);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [showComments, match.id]);
+
+  // 새 댓글이 추가되면 목록을 맨 아래로 스크롤
+  useEffect(() => {
+    if (showComments && commentListRef.current) {
+      commentListRef.current.scrollTop = commentListRef.current.scrollHeight;
+    }
+  }, [comments, showComments]);
+
+  const sendComment = async () => {
+    const text = commentInput.trim();
+    if (!text || commentSending) return;
+    setCommentSending(true);
+    try {
+      const res = await fetch(`${BASE}/api/match-comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchId: match.id, message: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      setCommentInput("");
+      // 내가 쓴 댓글 즉시 반영 (폴링 중복 방지)
+      if (data.comment.id > lastCommentIdRef.current) {
+        lastCommentIdRef.current = data.comment.id;
+        setComments((prev) => [...(prev || []), data.comment].slice(-200));
+      }
+    } finally {
+      setCommentSending(false);
     }
   };
 
@@ -491,6 +561,52 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      <button className="comments-toggle" onClick={toggleComments}>
+        {showComments ? "▲ 댓글 닫기" : "💬 댓글 보기"}
+      </button>
+
+      {showComments && (
+        <div className="comments-box">
+          <div className="comments-list" ref={commentListRef}>
+            {comments === null ? (
+              <div className="empty" style={{ padding: "12px 0" }}>
+                불러오는 중...
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="empty" style={{ padding: "12px 0" }}>
+                첫 댓글을 남겨보세요!
+              </div>
+            ) : (
+              comments.map((c) => {
+                const mine = c.nickname === user.nickname;
+                return (
+                  <div key={c.id} className={`comment-row ${mine ? "mine" : ""}`}>
+                    <span className="comment-nick">{c.nickname}</span>
+                    <span className="comment-text">{c.message}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <div className="comments-input">
+            <input
+              placeholder="댓글을 입력하세요..."
+              value={commentInput}
+              onChange={(e) => setCommentInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendComment()}
+              maxLength={200}
+            />
+            <button
+              className="btn"
+              onClick={sendComment}
+              disabled={commentSending || !commentInput.trim()}
+            >
+              등록
+            </button>
+          </div>
         </div>
       )}
 

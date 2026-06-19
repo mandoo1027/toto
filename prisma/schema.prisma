@@ -45,6 +45,19 @@ model Match {
   awayScore  Int?
   createdAt  DateTime @default(now())
   bets       Bet[]
+  comments   MatchComment[]
+}
+
+model MatchComment {
+  id        Int      @id @default(autoincrement())
+  matchId   Int
+  nickname  String
+  message   String
+  createdAt DateTime @default(now())
+
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@index([matchId])
 }
 
 model Bet {
