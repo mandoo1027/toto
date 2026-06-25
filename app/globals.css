@@ -333,6 +333,26 @@ a {
   padding: 3px 9px;
   border-radius: 999px;
 }
+.cancel-bet-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cancel-bet-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+.cancel-bet-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
 /* 경기별 베팅 현황 */
 .bets-toggle {

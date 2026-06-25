@@ -224,6 +224,22 @@ export default function HomeClient({ initialUser, matches, initialBets }) {
                   await refreshBets();
                   return true;
                 }}
+                onCancelBet={async () => {
+                  const res = await fetch(`${BASE}/api/bet`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ matchId: m.id }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    showToast(data.error || "취소 실패");
+                    return false;
+                  }
+                  showToast("베팅을 취소했습니다. (5,000P 환급)");
+                  await refreshMe();
+                  await refreshBets();
+                  return true;
+                }}
               />
             ))}
           </>
@@ -293,9 +309,11 @@ function Header({ user, onLogout }) {
   );
 }
 
-function MatchCard({ match, user, myBet, onBet, finished }) {
+function MatchCard({ match, user, myBet, onBet, onCancelBet, finished }) {
   const [pick, setPick] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [showBets, setShowBets] = useState(false);
   const [matchBets, setMatchBets] = useState(null);
   const [now, setNow] = useState(() => Date.now());
@@ -468,6 +486,14 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
     }
   };
 
+  const doCancelBet = async () => {
+    setCancelOpen(false);
+    setCancelling(true);
+    await onCancelBet();
+    setCancelling(false);
+    setPick(null);
+  };
+
   const isFinished = finished || match.status === "FINISHED";
   // 킥오프 전까지는 베팅/변경 가능 (이미 베팅했어도 잠그지 않음)
   const locked = isFinished || timeLocked;
@@ -552,6 +578,15 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
             <span className="result-won">적중 ✓</span>
           )}
           {myBet.status === "LOST" && <span className="result-lost">낙첨</span>}
+          {!locked && myBet.status === "PENDING" && (
+            <button
+              className="cancel-bet-btn"
+              onClick={() => setCancelOpen(true)}
+              disabled={cancelling}
+            >
+              {cancelling ? "취소 중..." : "베팅 취소"}
+            </button>
+          )}
         </div>
       )}
 
@@ -726,6 +761,24 @@ function MatchCard({ match, user, myBet, onBet, finished }) {
         cancelText="취소"
         onConfirm={doDeleteComment}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmModal
+        open={cancelOpen}
+        title="베팅 취소"
+        message={
+          <>
+            이 경기의 베팅을 취소할까요?
+            <br />
+            <span className="confirm-sub">
+              {myBet ? `${myBet.amount.toLocaleString()}P가 환급됩니다.` : ""}
+            </span>
+          </>
+        }
+        confirmText="베팅 취소"
+        cancelText="닫기"
+        onConfirm={doCancelBet}
+        onCancel={() => setCancelOpen(false)}
       />
 
       <ConfirmModal

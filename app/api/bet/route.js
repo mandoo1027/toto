@@ -91,3 +91,48 @@ export async function GET() {
   });
   return NextResponse.json({ bets });
 }
+
+// 베팅 취소 (킥오프 전, 본인 베팅만 / 포인트 환급)
+export async function DELETE(req) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+
+  const { matchId } = await req.json();
+  const mid = parseInt(matchId, 10);
+  if (Number.isNaN(mid)) {
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+  }
+
+  const match = await prisma.match.findUnique({ where: { id: mid } });
+  if (!match) {
+    return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
+  }
+  // 마감/종료된 경기는 취소 불가
+  if (match.status !== "SCHEDULED" || new Date(match.kickoff).getTime() <= Date.now()) {
+    return NextResponse.json(
+      { error: "베팅이 마감되어 취소할 수 없습니다." },
+      { status: 400 }
+    );
+  }
+
+  // 본인 베팅 조회
+  const bet = await prisma.bet.findFirst({
+    where: { userId: user.id, matchId: mid },
+  });
+  if (!bet) {
+    return NextResponse.json({ error: "취소할 베팅이 없습니다." }, { status: 404 });
+  }
+
+  // 포인트 환급 + 베팅 삭제 (트랜잭션)
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: { points: { increment: bet.amount } },
+    }),
+    prisma.bet.delete({ where: { id: bet.id } }),
+  ]);
+
+  return NextResponse.json({ ok: true, refunded: bet.amount });
+}
